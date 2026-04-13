@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AURA — AI Stylist</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0a;
+    color: #f0f0f0;
+    font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+    min-height: 100vh;
+  }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 48px 0 32px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #a78bfa;
+    background: rgba(167,139,250,0.1);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 100px;
+    padding: 6px 16px;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, #f0f0f0 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: #555;
+    font-size: 14px;
+  }
+
+  /* Section label */
+  .label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #444;
+    margin-bottom: 10px;
+  }
+
+  /* Occasions */
+  .occasions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .occasion-btn {
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .occasion-btn.active {
+    border-color: #a78bfa;
+    background: rgba(167,139,250,0.15);
+    color: #a78bfa;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed rgba(255,255,255,0.1);
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    background: rgba(255,255,255,0.02);
+    transition: all 0.2s;
+    margin-bottom: 12px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .upload-zone.drag-over {
+    border-color: #a78bfa;
+    background: rgba(167,139,250,0.05);
+  }
+  .upload-zone.has-image {
+    border-color: rgba(167,139,250,0.3);
+    min-height: auto;
+    cursor: default;
+  }
+  .upload-placeholder {
+    text-align: center;
+    padding: 40px;
+  }
+  .upload-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    animation: pulse 2s ease-in-out infinite;
+    display: block;
+  }
+  .upload-placeholder p { color: #ccc; font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+  .upload-placeholder span { color: #444; font-size: 13px; }
+
+  #preview-img {
+    width: 100%;
+    display: block;
+    border-radius: 18px;
+  }
+  .change-photo-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0,0,0,0.75);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* Rate button */
+  .rate-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    margin-bottom: 24px;
+    transition: opacity 0.2s;
+    font-family: inherit;
+    display: none;
+  }
+  .rate-btn:hover { opacity: 0.85; }
+
+  /* Loading */
+  .loading {
+    text-align: center;
+    padding: 32px 0;
+    display: none;
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(167,139,250,0.2);
+    border-top: 3px solid #a78bfa;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  .loading p { color: #555; font-size: 14px; }
+
+  /* Error */
+  .error-box {
+    background: rgba(255,68,68,0.08);
+    border: 1px solid rgba(255,68,68,0.2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    color: #ff6b6b;
+    font-size: 14px;
+    display: none;
+  }
+
+  /* Results */
+  .results {
+    display: none;
+    animation: fadeUp 0.5s ease;
+  }
+
+  /* Score card */
+  .score-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 20px;
+    padding: 28px 24px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .score-ring-wrap {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto;
+  }
+  .score-ring-wrap svg { transform: rotate(-90deg); }
+  .score-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .score-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+  .score-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .vibe-tag {
+    display: inline-block;
+    margin-top: 16px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #a78bfa;
+    background: rgba(167,139,250,0.1);
+    border-radius: 100px;
+    padding: 6px 16px;
+  }
+  .occasion-verdict {
+    font-size: 14px;
+    color: #666;
+    margin-top: 12px;
+    line-height: 1.6;
+  }
+
+  /* Stylist note */
+  .stylist-note {
+    background: rgba(167,139,250,0.06);
+    border: 1px solid rgba(167,139,250,0.15);
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .stylist-note .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #a78bfa;
+    margin-bottom: 8px;
+  }
+  .stylist-note p { font-size: 14px; color: #ccc; line-height: 1.7; }
+
+  /* Works/Fix grid */
+  .feedback-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .feedback-box {
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .feedback-box.good {
+    background: rgba(0,221,136,0.05);
+    border: 1px solid rgba(0,221,136,0.15);
+  }
+  .feedback-box.bad {
+    background: rgba(255,68,68,0.05);
+    border: 1px solid rgba(255,68,68,0.15);
+  }
+  .feedback-box .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .feedback-box.good .section-title { color: #00dd88; }
+  .feedback-box.bad .section-title { color: #ff6b6b; }
+  .feedback-item {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  /* Affiliates */
+  .affiliates-box {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .affiliates-box .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 12px;
+  }
+  .affiliate-card {
+    display: block;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+    text-decoration: none;
+    transition: all 0.2s;
+    margin-bottom: 8px;
+  }
+  .affiliate-card:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(167,139,250,0.4);
+  }
+  .affiliate-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .affiliate-name { font-size: 13px; font-weight: 600; color: #f0f0f0; }
+  .affiliate-store {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 3px 8px;
+  }
+  .affiliate-cta { font-size: 11px; color: #555; margin-top: 2px; display: block; }
+
+  /* Buttons */
+  .share-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 8px;
+    font-family: inherit;
+  }
+  .share-btn:hover { background: rgba(255,255,255,0.1); }
+  .share-btn.copied {
+    background: rgba(0,221,136,0.1);
+    border-color: rgba(0,221,136,0.3);
+    color: #00dd88;
+  }
+  .reset-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    color: #333;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 11px;
+    color: #1e1e1e;
+    letter-spacing: 1px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="badge">AI Stylist</div>
+    <h1>AURA</h1>
+    <p class="subtitle">snap your fit. get real feedback.</p>
+  </div>
+
+  <p class="label">occasion</p>
+  <div class="occasions" id="occasions"></div>
+
+  <div class="upload-zone" id="upload-zone">
+    <div class="upload-placeholder" id="placeholder">
+      <span class="upload-icon">📸</span>
+      <p>drop your fit here</p>
+      <span>or tap to upload</span>
+    </div>
+    <div id="preview-wrap" style="display:none; width:100%; position:relative;">
+      <img id="preview-img" alt="Your outfit" />
+      <button class="change-photo-btn" id="change-btn">change photo</button>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" accept="image/*" style="display:none">
+
+  <button class="rate-btn" id="rate-btn">Rate My Fit</button>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>reading your aura...</p>
+  </div>
+
+  <div class="error-box" id="error-box"></div>
+
+  <div class="results" id="results">
+    <div class="score-card">
+      <div class="score-ring-wrap">
+        <svg width="140" height="140" id="score-svg">
+          <circle cx="70" cy="70" r="54" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10"/>
+          <circle id="score-arc" cx="70" cy="70" r="54" fill="none" stroke="#a78bfa" stroke-width="10"
+            stroke-dasharray="0 339.3" stroke-linecap="round"
+            style="transition: stroke-dasharray 1.2s cubic-bezier(.4,0,.2,1)"/>
+        </svg>
+        <div class="score-center">
+          <span class="score-number" id="score-num">0</span>
+          <span class="score-label" id="score-lbl">—</span>
+        </div>
+      </div>
+      <div class="vibe-tag" id="vibe-tag"></div>
+      <p class="occasion-verdict" id="occasion-verdict"></p>
+    </div>
+
+    <div class="stylist-note">
+      <div class="section-title">stylist says</div>
+      <p id="stylist-note-text"></p>
+    </div>
+
+    <div class="feedback-grid">
+      <div class="feedback-box good">
+        <div class="section-title">what's hitting</div>
+        <div id="what-works"></div>
+      </div>
+      <div class="feedback-box bad">
+        <div class="section-title">fix this</div>
+        <div id="what-fix"></div>
+      </div>
+    </div>
+
+    <div class="affiliates-box">
+      <div class="section-title" id="affiliate-title">elevate the look</div>
+      <div id="affiliate-list"></div>
+    </div>
+
+    <button class="share-btn" id="share-btn">Share My AURA Score</button>
+    <button class="reset-btn" id="reset-btn">Rate another fit</button>
+  </div>
+
+  <div class="footer">AURA by EntreeDigitale</div>
+</div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────────────────
+  // IMPORTANT: Paste your Anthropic API key below between the quotes
+  const API_KEY =  "YOUR_API_KEY_HERE";
+  const AFFILIATES = {
+    shoes: [
+      { name: "New Balance 550", store: "ASOS", url: "https://www.asos.com/search/?q=new+balance+550", color: "#888" },
+      { name: "Nike Air Force 1", store: "Amazon", url: "https://www.amazon.com/s?k=nike+air+force+1&tag=aura-affiliate", color: "#ff9900" },
+      { name: "Adidas Samba", store: "Depop", url: "https://www.depop.com/search/?q=adidas+samba", color: "#ff2300" },
+    ],
+    tops: [
+      { name: "Vintage Graphic Tee", store: "Depop", url: "https://www.depop.com/search/?q=vintage+graphic+tee", color: "#ff2300" },
+      { name: "Oversized Hoodie", store: "ASOS", url: "https://www.asos.com/search/?q=oversized+hoodie", color: "#888" },
+      { name: "Linen Button Up", store: "Amazon", url: "https://www.amazon.com/s?k=linen+button+up+shirt&tag=aura-affiliate", color: "#ff9900" },
+    ],
+    bottoms: [
+      { name: "Baggy Cargo Pants", store: "Depop", url: "https://www.depop.com/search/?q=baggy+cargo+pants", color: "#ff2300" },
+      { name: "Wide Leg Jeans", store: "ASOS", url: "https://www.asos.com/search/?q=wide+leg+jeans", color: "#888" },
+      { name: "Pleated Trousers", store: "Amazon", url: "https://www.amazon.com/s?k=pleated+trousers&tag=aura-affiliate", color: "#ff9900" },
+    ],
+    accessories: [
+      { name: "Fitted Cap", store: "Depop", url: "https://www.depop.com/search/?q=fitted+cap", color: "#ff2300" },
+      { name: "Silver Chain", store: "Amazon", url: "https://www.amazon.com/s?k=silver+chain+necklace&tag=aura-affiliate", color: "#ff9900" },
+      { name: "Vintage Shades", store: "Depop", url: "https://www.depop.com/search/?q=vintage+sunglasses", color: "#ff2300" },
+    ],
+  };
+
+  const TIERS = [
+    { max: 40, label: "Needs Work", color: "#ff4444" },
+    { max: 60, label: "Mid", color: "#ff8800" },
+    { max: 75, label: "Clean", color: "#ffcc00" },
+    { max: 88, label: "Hard", color: "#00dd88" },
+    { max: 100, label: "AURA", color: "#a78bfa" },
+  ];
+
+  const OCCASIONS = ["everyday", "date night", "job interview", "party", "school", "workout"];
+
+  // ── State ────────────────────────────────────────────────────────────────
+  let currentOccasion = "everyday";
+  let imageDataUrl = null;
+  let lastResult = null;
+
+  // ── Elements ─────────────────────────────────────────────────────────────
+  const uploadZone = document.getElementById("upload-zone");
+  const placeholder = document.getElementById("placeholder");
+  const previewWrap = document.getElementById("preview-wrap");
+  const previewImg = document.getElementById("preview-img");
+  const fileInput = document.getElementById("file-input");
+  const rateBtn = document.getElementById("rate-btn");
+  const loadingEl = document.getElementById("loading");
+  const errorBox = document.getElementById("error-box");
+  const resultsEl = document.getElementById("results");
+  const shareBtn = document.getElementById("share-btn");
+  const resetBtn = document.getElementById("reset-btn");
+  const changeBtn = document.getElementById("change-btn");
+
+  // ── Occasions ─────────────────────────────────────────────────────────────
+  const occasionsEl = document.getElementById("occasions");
+  OCCASIONS.forEach(o => {
+    const btn = document.createElement("button");
+    btn.className = "occasion-btn" + (o === currentOccasion ? " active" : "");
+    btn.textContent = o;
+    btn.onclick = () => {
+      currentOccasion = o;
+      document.querySelectorAll(".occasion-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    };
+    occasionsEl.appendChild(btn);
+  });
+
+  // ── File handling ─────────────────────────────────────────────────────────
+  function handleFile(file) {
+    if (!file || !file.type.startsWith("image/")) return;
+    resetResults();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imageDataUrl = e.target.result;
+      previewImg.src = imageDataUrl;
+      placeholder.style.display = "none";
+      previewWrap.style.display = "block";
+      uploadZone.classList.add("has-image");
+      rateBtn.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  uploadZone.addEventListener("click", () => { if (!imageDataUrl) fileInput.click(); });
+  changeBtn.addEventListener("click", (e) => { e.stopPropagation(); fileInput.click(); });
+  fileInput.addEventListener("change", e => handleFile(e.target.files[0]));
+
+  uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("drag-over"); });
+  uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
+  uploadZone.addEventListener("drop", e => {
+    e.preventDefault();
+    uploadZone.classList.remove("drag-over");
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  // ── Analyze ───────────────────────────────────────────────────────────────
+  rateBtn.addEventListener("click", analyzeOutfit);
+
+  async function analyzeOutfit() {
+    if (!imageDataUrl) return;
+
+    if (API_KEY === "YOUR_API_KEY_HERE") {
+      showError("Add your Anthropic API key inside the AURA.html file where it says YOUR_API_KEY_HERE");
+      return;
+    }
+
+    rateBtn.style.display = "none";
+    loadingEl.style.display = "block";
+    errorBox.style.display = "none";
+    resultsEl.style.display = "none";
+
+    const [meta, base64Data] = imageDataUrl.split(",");
+    const mediaType = meta.match(/:(.*?);/)?.[1] || "image/jpeg";
+
+    const prompt = `You are AURA — a brutally honest but hype AI fashion stylist built for Gen Z.
+Analyze this outfit photo for a ${currentOccasion} occasion.
+
+Always analyze whatever clothing is visible, even if partially cropped. Never refuse.
+
+Respond ONLY with valid JSON, no markdown, no backticks:
+{
+  "score": <number 0-100>,
+  "vibe": "<2-4 word vibe label e.g. 'Old Money Clean' or 'Streetwear Core'>",
+  "what_works": ["<thing 1>", "<thing 2>", "<thing 3>"],
+  "what_to_fix": ["<fix 1>", "<fix 2>"],
+  "stylist_note": "<1-2 sentences of brutally honest Gen Z stylist advice>",
+  "missing_piece": "<exactly one of: shoes, tops, bottoms, accessories>",
+  "occasion_verdict": "<one sentence: is this appropriate for ${currentOccasion}?>"
+}`;
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-opus-4-5",
+          max_tokens: 1000,
+          messages: [{
+            role: "user",
+            content: [
+              { type: "image", source: { type: "base64", media_type: mediaType, data: base64Data } },
+              { type: "text", text: prompt }
+            ]
+          }]
+        })
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      const text = (data.content || []).map(b => b.text || "").join("");
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      lastResult = parsed;
+      showResult(parsed);
+    } catch (err) {
+      console.error(err);
+      showError("Couldn't analyze the fit. Check your API key and try again.");
+      rateBtn.style.display = "block";
+    } finally {
+      loadingEl.style.display = "none";
+    }
+  }
+
+  // ── Render result ─────────────────────────────────────────────────────────
+  function showResult(r) {
+    const tier = TIERS.find(t => r.score <= t.max) || TIERS.at(-1);
+    const circ = 2 * Math.PI * 54;
+    const dash = (r.score / 100) * circ;
+
+    const arc = document.getElementById("score-arc");
+    arc.setAttribute("stroke", tier.color);
+    setTimeout(() => arc.setAttribute("stroke-dasharray", `${dash} ${circ}`), 50);
+
+    document.getElementById("score-num").textContent = r.score;
+    document.getElementById("score-num").style.color = tier.color;
+    document.getElementById("score-lbl").textContent = tier.label;
+    document.getElementById("score-lbl").style.color = tier.color;
+    document.getElementById("vibe-tag").textContent = r.vibe;
+    document.getElementById("occasion-verdict").textContent = r.occasion_verdict;
+    document.getElementById("stylist-note-text").textContent = r.stylist_note;
+
+    document.getElementById("what-works").innerHTML =
+      r.what_works.map(w => `<div class="feedback-item">✓ ${w}</div>`).join("");
+    document.getElementById("what-fix").innerHTML =
+      r.what_to_fix.map(w => `<div class="feedback-item">→ ${w}</div>`).join("");
+
+    const picks = AFFILIATES[r.missing_piece] || AFFILIATES.accessories;
+    document.getElementById("affiliate-title").textContent = `elevate the look — shop ${r.missing_piece}`;
+    document.getElementById("affiliate-list").innerHTML = picks.map(item => `
+      <a class="affiliate-card" href="${item.url}" target="_blank" rel="noopener noreferrer">
+        <div class="affiliate-row">
+          <span class="affiliate-name">${item.name}</span>
+          <span class="affiliate-store" style="color:${item.color}">${item.store}</span>
+        </div>
+        <span class="affiliate-cta">Shop this →</span>
+      </a>
+    `).join("");
+
+    resultsEl.style.display = "block";
+  }
+
+  // ── Share ─────────────────────────────────────────────────────────────────
+  shareBtn.addEventListener("click", async () => {
+    if (!lastResult) return;
+    const text = `My AURA Score: ${lastResult.score}/100 — ${lastResult.vibe} 🔥 Rate your fit at AURA by EntreeDigitale`;
+    try {
+      if (navigator.share && navigator.canShare({ text })) {
+        await navigator.share({ title: "My AURA Score", text, url: window.location.href });
+      } else {
+        await navigator.clipboard.writeText(text);
+        shareBtn.textContent = "Copied to clipboard! 🔥";
+        shareBtn.classList.add("copied");
+        setTimeout(() => {
+          shareBtn.textContent = "Share My AURA Score";
+          shareBtn.classList.remove("copied");
+        }, 2500);
+      }
+    } catch {
+      await navigator.clipboard.writeText(text).catch(() => alert(text));
+    }
+  });
+
+  // ── Reset ─────────────────────────────────────────────────────────────────
+  resetBtn.addEventListener("click", () => {
+    imageDataUrl = null;
+    lastResult = null;
+    previewImg.src = "";
+    previewWrap.style.display = "none";
+    placeholder.style.display = "block";
+    uploadZone.classList.remove("has-image");
+    rateBtn.style.display = "none";
+    resetResults();
+    fileInput.value = "";
+    document.getElementById("score-arc").setAttribute("stroke-dasharray", "0 339.3");
+  });
+
+  function resetResults() {
+    resultsEl.style.display = "none";
+    errorBox.style.display = "none";
+  }
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.style.display = "block";
+  }
+</script>
+</body>
+</html>
